@@ -51,15 +51,42 @@ class BlockedIPs(db.Model):
         return self.ip_address
 
 
+class MalwareURLs(db.Model):
+    __tablename__ = 'malware_urls'
+    id = db.Column('id', db.INTEGER, primary_key=True)
+    url = db.Column('url', db.String(256), nullable=False)
+    domain = db.Column('domain', db.String(256), nullable=True)
+    filename = db.Column('filename', db.String(256), nullable=True)
+    priority = db.Column('priority', db.String(256), nullable=True)
+    file_type = db.Column('file_type', db.String(256), nullable=True)
+    country = db.Column('country', db.String(256), nullable=True)
+    url_status = db.Column('url_status', db.String(256), nullable=True)
+    date_added = db.Column('date_added', db.String(256), nullable=True)
+    threat_type = db.Column('threat_type', db.String(256), nullable=True)
+    threat_tag = db.Column('threat_tag', db.String(256), nullable=True)
+    created_at = db.Column('created_at', db.TIMESTAMP, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column('updated_at', db.TIMESTAMP, nullable=False, default=datetime.utcnow)
+
+
 # blocked_ips schema
 class BlockedIPsSchema(ma.Schema):
     class Meta:
         fields = ('id', 'ip_address', 'revision')
 
 
+class MalwareURLsSchema(ma.Schema):
+    class Meta:
+        fields = (
+            'id', 'url', 'domain', 'filename', 'priority',
+            'file_type', 'country', 'url_status', 'date_added',
+            'threat_type', 'threat_tag', 'created_at', 'updated_at',
+        )
+
 # init schema
 blocked_ip_schema = BlockedIPsSchema()
 blocked_ips_schema = BlockedIPsSchema(many=True)
+malware_url_schema = MalwareURLsSchema()
+malware_urls_schema = MalwareURLsSchema(many=True)
 
 
 @app.route('/create', methods=['POST'])
@@ -79,9 +106,9 @@ def get_list():
     return jsonify(result)
 
 
-@app.route('/ip/<id>', methods=['GET'])
-def search_ip(id):
-    ip = BlockedIPs.query.get(id)
+@app.route('/ip/search/<ip>', methods=['GET'])
+def search_ip(ip):
+    ip = BlockedIPs.query.filter_by(ip_address=ip).first()
     result = blocked_ip_schema.jsonify(ip)
     return result
 
@@ -105,22 +132,31 @@ def delete_ip(id):
     return blocked_ip_schema.jsonify(item)
 
 
-class MalwareURLs(db.Model):
-    __tablename__ = 'malware_urls'
-    id = db.Column('id', db.INTEGER, primary_key=True)
-    url = db.Column('url', db.String(256), nullable=False)
-    domain = db.Column('domain', db.String(256), nullable=True)
-    filename = db.Column('filename', db.String(256), nullable=True)
-    priority = db.Column('priority', db.String(256), nullable=True)
-    file_type = db.Column('file_type', db.String(256), nullable=True)
-    country = db.Column('country', db.String(256), nullable=True)
-    url_status = db.Column('url_status', db.String(256), nullable=True)
-    date_added = db.Column('date_added', db.String(256), nullable=True)
-    threat_type = db.Column('threat_type', db.String(256), nullable=True)
-    threat_tag = db.Column('threat_tag', db.String(256), nullable=True)
-    created_at = db.Column('created_at', db.TIMESTAMP, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column('updated_at', db.TIMESTAMP, nullable=False, default=datetime.utcnow)
+@app.route('/url/list', methods=['GET'])
+def url_list():
+    q = request.args['threat_type']
+    if q == 'Malware':
+        urls = MalwareURLs.query.filter_by(threat_type=q)
+        result = malware_urls_schema.dump(urls)
+        return result
+    elif q == 'Phishing':
+        urls = MalwareURLs.query.filter_by(threat_type=q)
+        result = malware_urls_schema.dump(urls)
+        return result
+    elif q == 'Ransomware':
+        urls = MalwareURLs.query.filter_by(threat_type=q)
+        result = malware_urls_schema.dump(urls)
+        return result
+    else:
+        return {'error': "Please provide valid query"}
 
+
+# 2 search url
+@app.route('/url/search/<url>', methods=['GET'])
+def search_ip(url):
+    ip = MalwareURLs.query.filter_by(MalwareURLs.url.ilike(url)).first()
+    result = blocked_ip_schema.jsonify(ip)
+    return result
 
 @app.route('/')
 def hello_world():
@@ -129,4 +165,4 @@ def hello_world():
 
 # runserver
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="127.0.0.1", debug=True)
