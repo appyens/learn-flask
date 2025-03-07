@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head><title>Login</title></head>
+<body>
+    <h2>Login</h2>
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+    <form method="post">
+        Username: <input type="text" name="username" required>
+
+        Password: <input type="password" name="password" required>
+
+        <input type="submit" value="Login">
+    </form>
+    <a href="{{ url_for('signup') }}">Signup</a>
+</body>
+</html>
